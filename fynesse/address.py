@@ -58,10 +58,10 @@ def predict_price_parameterized(args, latitudes, longitudes, dates, property_typ
         ]) for g in df["Geohash"])
         np_ord = np.vectorize(lambda x: x.toordinal())
 
-        design = np.concatenate((np_ord(df["Date"]), property_type_oh, geohash_oh), axis=1)
+        design = np.concatenate((np_ord(df["Date"]).reshape(-1, 1), property_type_oh.reshape(-1, 1), geohash_oh.reshape(-1, 1)), axis=1)
         print(design)
 
-        m = sm.OLS(y, design)
+        m = sm.OLS(df["Price"].reshape(-1, 1), design)
         m_results = m.fit()
         property_oh_pred = np.array([np.array([
             1 if property_type == "F" else 0,
