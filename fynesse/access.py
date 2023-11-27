@@ -114,7 +114,6 @@ def get_rows_in_bounds(north, south, west, east, latest_date, earliest_date, con
     """
     Get rows from the database according to the specified bounds
     Return dataframe
-    TODO: Check performance, if slow try to optimize with indices
     """
     # Would usually be parameterized to prevent injection
     # but because there are no user input strings here don't need to worry
@@ -124,6 +123,6 @@ def get_rows_in_bounds(north, south, west, east, latest_date, earliest_date, con
                 WHERE {south} < latitude AND latitude < {north}
                 AND {east} < longitude AND longitude > {west}
                 AND CAST('{earliest_date}' as date) < date_of_transfer AND date_of_transfer < CAST('{latest_date}' as date)
-                LIMIT 10000
+                LIMIT 50000
                 """)
     return cur.fetchall()

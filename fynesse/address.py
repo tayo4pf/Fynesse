@@ -24,6 +24,7 @@ def predict_price_parameterized(args, latitudes, longitudes, dates, property_typ
     #Finding bounds for latitude and longitude
     box_width = d * (0.02/2.2)
     box_height = d * (0.02/2.2)
+    price_preds = []
     for latitude, longitude, date, property_type in zip(latitudes, longitudes, dates, property_types):
         north = latitude + (box_height/2)
         south = latitude - (box_height/2)
@@ -41,27 +42,25 @@ def predict_price_parameterized(args, latitudes, longitudes, dates, property_typ
             "Price": data[:, 1],
             "Date": data[:, 2],
             "Property Type": data[:, 3],
-            "Latitude": data[:, -2],
-            "Longitude": data[:, -1]
+            "Latitude": data[:, -3],
+            "Longitude": data[:, -2]
         })
         df["Geohash"] = df.apply(lambda x: gh.encode(x["Latitude"], x["Longitude"], precision=h), axis=1)
-        print(df.head())
-        property_type_oh = np.array(np.array([
+        property_type_oh = np.array([np.array([
             1 if p == "F" else 0,
             1 if p == "S" else 0,
             1 if p == "D" else 0,
             1 if p == "T" else 0,
             1 if p == "O" else 0
-            ]) for p in df["Property Type"])
-        geohash_oh = np.array(np.array([
+            ]) for p in df["Property Type"]])
+        geohash_oh = np.array([np.array([
             1 if g == encoding else 0 for encoding in df["Geohash"].unique()
-        ]) for g in df["Geohash"])
+        ]) for g in df["Geohash"]])
         np_ord = np.vectorize(lambda x: x.toordinal())
 
         design = np.concatenate((np_ord(df["Date"]).reshape(-1, 1), property_type_oh, geohash_oh), axis=1)
-        print(design)
 
-        m = sm.OLS(df["Price"].reshape(-1, 1), design)
+        m = sm.OLS(np.array(df["Price"]).reshape(-1, 1), design)
         m_results = m.fit()
         property_oh_pred = np.array([np.array([
             1 if property_type == "F" else 0,
@@ -77,8 +76,10 @@ def predict_price_parameterized(args, latitudes, longitudes, dates, property_typ
         design_pred = np.concatenate(
             (np.array([date.toordinal()]).reshape(-1, 1), property_oh_pred, geohash_oh), axis=1
         )
-        price_pred = m_results.get_prediction(design_pred)
-        print(price_pred)
+        price_pred = m_results.predict(design_pred)
+        price_preds.append(price_pred[0])
+    price_preds = np.array(price_preds)
+    return price_preds
 
 def predict_price(latitude, longitude, date, property_type, conn):
     """
@@ -106,41 +107,38 @@ def predict_price(latitude, longitude, date, property_type, conn):
         "Price": data[:, 1],
         "Date": data[:, 2],
         "Property Type": data[:, 3],
-        "Latitude": data[:, -2],
-        "Longitude": data[:, -1]
+        "Latitude": data[:, -3],
+        "Longitude": data[:, -2]
     })
     df["Geohash"] = df.apply(lambda x: gh.encode(x["Latitude"], x["Longitude"], precision=h), axis=1)
-    
-    property_type_oh = np.array(np.array([
+    property_type_oh = np.array([np.array([
         1 if p == "F" else 0,
         1 if p == "S" else 0,
         1 if p == "D" else 0,
         1 if p == "T" else 0,
         1 if p == "O" else 0
-        ]) for p in df["Property Type"])
-    geohash_oh = np.array(np.array([
+        ]) for p in df["Property Type"]])
+    geohash_oh = np.array([np.array([
         1 if g == encoding else 0 for encoding in df["Geohash"].unique()
-    ]) for g in df["Geohash"])
+    ]) for g in df["Geohash"]])
     np_ord = np.vectorize(lambda x: x.toordinal())
 
-    design = np.concatenate((np_ord(df["Date"]), property_type_oh, geohash_oh), axis=1)
-    print(design)
+    design = np.concatenate((np_ord(df["Date"]).reshape(-1, 1), property_type_oh, geohash_oh), axis=1)
 
-    """
-    m = sm.OLS(y, design)
+    m = sm.OLS(np.array(df["Price"]).reshape(-1, 1), design)
     m_results = m.fit()
-    property_oh_pred = np.array(np.array([
+    property_oh_pred = np.array([np.array([
         1 if property_type == "F" else 0,
         1 if property_type == "S" else 0,
         1 if property_type == "D" else 0,
         1 if property_type == "T" else 0,
         1 if property_type == "O" else 0
-    ]))
-    geohash_oh = np.array(np.array([
-        1 if geohash == encoding for encoding in df["Geohash"].unique()
-    ]))
+    ])])
+    geohash = gh.encode(latitude, longitude, precision=h)
+    geohash_oh = np.array([np.array([
+        1 if geohash == encoding else 0 for encoding in df["Geohash"].unique()
+    ])])
     design_pred = np.concatenate(
-        (np.array([date.toordinal()]),)
+        (np.array([date.toordinal()]).reshape(-1, 1), property_oh_pred, geohash_oh), axis=1
     )
-    price_pred = m_results.get_prediction()
-    """
+    return m_results.predict(design_pred)[0]
