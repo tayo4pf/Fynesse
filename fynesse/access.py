@@ -121,8 +121,9 @@ def get_rows_in_bounds(north, south, west, east, latest_date, earliest_date, con
     cur = conn.cursor()
     cur.execute(f"""
                 SELECT * FROM prices_coordinates_data 
-                WHERE {south} < latitude < {north}
-                AND {east} < longitude > {west}
-                AND CAST('{earliest_date}' as date) < date_of_transfer < CAST('{latest_date}' as date)
+                WHERE {south} < latitude AND latitude < {north}
+                AND {east} < longitude AND longitude > {west}
+                AND CAST('{earliest_date}' as date) < date_of_transfer AND date_of_transfer < CAST('{latest_date}' as date)
+                LIMIT 10000
                 """)
     return cur.fetchall()
