@@ -45,7 +45,7 @@ def predict_price_parameterized(args, latitudes, longitudes, dates, property_typ
             "Longitude": data[:, -1]
         })
         df["Geohash"] = df.apply(lambda x: gh.encode(x["Latitude"], x["Longitude"], precision=h), axis=1)
-        
+        print(df.head())
         property_type_oh = np.array(np.array([
             1 if p == "F" else 0,
             1 if p == "S" else 0,
