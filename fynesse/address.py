@@ -9,7 +9,7 @@ import datetime
 import pymysql
 import yaml
 import statsmodels.api as sm
-import access
+from fynesse import access
 
 def predict_price_parameterized(args, latitudes, longitudes, dates, property_types, conn):
     """
