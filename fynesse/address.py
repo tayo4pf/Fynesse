@@ -27,6 +27,7 @@ def predict_price_parameterized(args, latitudes, longitudes, dates, property_typ
     box_width = d * (0.02/2.2)
     box_height = d * (0.02/2.2)
     price_preds = []
+    results = []
     for latitude, longitude, date, property_type in zip(latitudes, longitudes, dates, property_types):
         north = latitude + (box_height/2)
         south = latitude - (box_height/2)
@@ -39,7 +40,10 @@ def predict_price_parameterized(args, latitudes, longitudes, dates, property_typ
 
         #Getting data according to bounds
         rows = access.get_rows_in_bounds(north, south, west, east, latest_date, earliest_date)
-
+        if len(rows) < 200:
+            price_preds.append(np.nan)
+            results.append(f"Insufficient data to form model: {len(rows)} datapoints")
+            continue
         df = assess.labelled(rows, ("Postcode", "Price", "Date", "Property Type", "New Build Flag", "Tenure Type", 
             "Locality", "Town/City", "District", "County", "Positional Quality Indicator",
             "Country", "Latitude", "Longitude", "ID"))
@@ -77,8 +81,9 @@ def predict_price_parameterized(args, latitudes, longitudes, dates, property_typ
         )
         price_pred = m_results.predict(design_pred)
         price_preds.append(price_pred[0])
+        results.append(m_results)
     price_preds = np.array(price_preds)
-    return price_preds
+    return price_preds, results
 
 def predict_price(latitude, longitude, date, property_type):
     """
