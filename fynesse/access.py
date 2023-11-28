@@ -59,7 +59,7 @@ def select_top(table, n, conn = None):
 def head(table, n=5, conn = None):
     if conn is None:
         conn = make_conn()
-    rows = select_top(conn, table, n)
+    rows = select_top(table, n, conn = conn)
     for r in rows:
         print(r)
 

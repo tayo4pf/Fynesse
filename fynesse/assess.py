@@ -9,7 +9,7 @@ import numpy as np
 
 def random_sample(table, condition, size):
     query = f"SELECT * FROM {table} WHERE {condition}"
-    rows = access.get_rows_from_query()
+    rows = access.get_rows_from_query(query)
     return np.random.choice(rows, size)
 
 def query(query, columns):
