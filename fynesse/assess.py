@@ -8,14 +8,9 @@ import numpy as np
 """Place commands in this file to assess the data you have downloaded. How are missing values encoded, how are outliers encoded? What do columns represent, makes rure they are correctly labeled. How is the data indexed. Crete visualisation routines to assess the data (e.g. in bokeh). Ensure that date formats are correct and correctly timezoned."""
 
 def random_sample(table, condition, size):
-    query = f"SELECT * FROM {table} WHERE {condition} LIMIT {size}"
+    query = f"SELECT * FROM {table} WHERE {condition}"
     rows = access.get_rows_from_query()
-    return rows
-
-def data():
-    """Load the data from access and ensure missing values are correctly encoded as well as indices correct, column names informative, date and times correctly formatted. Return a structured data structure such as a data frame."""
-    df = access.data()
-    raise NotImplementedError
+    return np.random.choice(rows, size)
 
 def query(query, columns):
     """Request user input for some aspect of the data."""
