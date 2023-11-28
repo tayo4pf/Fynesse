@@ -40,9 +40,9 @@ def predict_price_parameterized(args, latitudes, longitudes, dates, property_typ
 
         #Getting data according to bounds
         rows = access.get_rows_in_bounds(north, south, west, east, latest_date, earliest_date)
-        if len(rows) < 200:
+        if len(rows) == 0:
             price_preds.append(np.nan)
-            results.append(f"Insufficient data to form model: {len(rows)} datapoints")
+            results.append(f"Insufficient data to form model: {len(rows)} datapoints in bounding area")
             continue
         df = assess.labelled(rows, ("Postcode", "Price", "Date", "Property Type", "New Build Flag", "Tenure Type", 
             "Locality", "Town/City", "District", "County", "Positional Quality Indicator",
