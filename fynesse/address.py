@@ -90,7 +90,7 @@ def predict_price(latitude, longitude, date, property_type):
     """
     
     d, t, h = optimize_model_args(((100, 50, 25),(730, 365, 180),(7, 5, 3)), 
-                                  {"latitude":latitude, "longitude":longitude, "date":date, "property":property})
+                                  {"latitude":latitude, "longitude":longitude, "date":date, "property_type":property_type})
     d = d * (0.02/2.2)
     pt = {"days": t}
     mt = {"days": -t}
