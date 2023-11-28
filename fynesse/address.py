@@ -9,13 +9,15 @@ import datetime
 import pymysql
 import yaml
 import statsmodels.api as sm
-from fynesse import access
+from fynesse import access, assess
 
-def predict_price_parameterized(args, latitudes, longitudes, dates, property_types, conn):
+def predict_price_parameterized(args, latitudes, longitudes, dates, property_types):
     """
     Price prediction for UK housing with parameters
     Returns performance of model with parameters
+    Access username, password, host, and database config must be specified
     """
+
     d, t, h = args
     d = d * (0.02/2.2)
     pt = {"days": t}
@@ -35,17 +37,14 @@ def predict_price_parameterized(args, latitudes, longitudes, dates, property_typ
         latest_date = date + datetime.timedelta(**pt)
         earliest_date = date + datetime.timedelta(**mt)
 
-        rows = access.get_rows_in_bounds(north, south, west, east, latest_date, earliest_date, conn)
+        #Getting data according to bounds
+        rows = access.get_rows_in_bounds(north, south, west, east, latest_date, earliest_date)
 
-        data = np.vstack(rows)
-        df = pd.DataFrame({
-            "Price": data[:, 1],
-            "Date": data[:, 2],
-            "Property Type": data[:, 3],
-            "Latitude": data[:, -3],
-            "Longitude": data[:, -2]
-        })
+        df = assess.labelled(rows, ("Postcode", "Price", "Date", "Property Type", "New Build Flag", "Tenure Type", 
+            "Locality", "Town/City", "District", "County", "Positional Quality Indicator",
+            "Country", "Latitude", "Longitude", "ID"))
         df["Geohash"] = df.apply(lambda x: gh.encode(x["Latitude"], x["Longitude"], precision=h), axis=1)
+
         property_type_oh = np.array([np.array([
             1 if p == "F" else 0,
             1 if p == "S" else 0,
@@ -81,10 +80,9 @@ def predict_price_parameterized(args, latitudes, longitudes, dates, property_typ
     price_preds = np.array(price_preds)
     return price_preds
 
-def predict_price(latitude, longitude, date, property_type, conn):
+def predict_price(latitude, longitude, date, property_type):
     """
     Price prediction for UK housing.
-    TODO: Do geohash, Create features matrix, Run regression, Output MSE
     """
     
     #Finding bounds for latitude and longitude
@@ -100,17 +98,13 @@ def predict_price(latitude, longitude, date, property_type, conn):
     latest_date = date + datetime.timedelta(**pt)
     earliest_date = date + datetime.timedelta(**mt)
 
-    rows = access.get_rows_in_bounds(north, south, west, east, latest_date, earliest_date, conn)
+    rows = access.get_rows_in_bounds(north, south, west, east, latest_date, earliest_date)
 
-    data = np.vstack(rows)
-    df = pd.DataFrame({
-        "Price": data[:, 1],
-        "Date": data[:, 2],
-        "Property Type": data[:, 3],
-        "Latitude": data[:, -3],
-        "Longitude": data[:, -2]
-    })
+    df = assess.labelled(rows, ("Postcode", "Price", "Date", "Property Type", "New Build Flag", "Tenure Type", 
+        "Locality", "Town/City", "District", "County", "Positional Quality Indicator",
+        "Country", "Latitude", "Longitude", "ID"))
     df["Geohash"] = df.apply(lambda x: gh.encode(x["Latitude"], x["Longitude"], precision=h), axis=1)
+
     property_type_oh = np.array([np.array([
         1 if p == "F" else 0,
         1 if p == "S" else 0,
