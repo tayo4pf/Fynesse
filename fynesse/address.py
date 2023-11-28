@@ -13,9 +13,15 @@ from fynesse import access, assess
 from itertools import product
 
 def optimize_model_args(arg_vals, input):
+    def cost(x):
+        r = predict_price_parameterized(x,**input)[1]
+        if isinstance(r, str):
+            return float('inf')
+        return r.mse_model
+
     return min(
         product(*arg_vals), 
-        key = lambda a: predict_price_parameterized(a,**input)[1].mse_model
+        key = cost
                )
 
 def predict_price_parameterized(args, latitude, longitude, date, property_type):
@@ -66,7 +72,7 @@ def predict_price_parameterized(args, latitude, longitude, date, property_type):
     design = np.concatenate((np_ord(df["Date"]).reshape(-1, 1), property_type_oh, geohash_oh), axis=1)
 
     m = sm.OLS(np.array(df["Price"]).reshape(-1, 1), design)
-    m_results = m.fit()
+    m_results = m.fit_regularized(alpha=0.1, L1_wt=0)
     property_oh_pred = np.array([np.array([
         1 if property_type == "F" else 0,
         1 if property_type == "S" else 0,
@@ -130,7 +136,7 @@ def predict_price(latitude, longitude, date, property_type):
     design = np.concatenate((np_ord(df["Date"]).reshape(-1, 1), property_type_oh, geohash_oh), axis=1)
 
     m = sm.OLS(np.array(df["Price"]).reshape(-1, 1), design)
-    m_results = m.fit()
+    m_results = m.fit_regularized(alpha=0.1, L1_wt=0)
     property_oh_pred = np.array([np.array([
         1 if property_type == "F" else 0,
         1 if property_type == "S" else 0,
