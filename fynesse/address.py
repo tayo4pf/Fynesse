@@ -89,7 +89,8 @@ def predict_price(latitude, longitude, date, property_type):
     Price prediction for UK housing.
     """
     
-    d, t, h = optimize_model_args(((100, 50, 25),(730, 365, 180),(7, 5, 3)), (latitude, longitude, date, property))
+    d, t, h = optimize_model_args(((100, 50, 25),(730, 365, 180),(7, 5, 3)), 
+                                  {"latitude":latitude, "longitude":longitude, "date":date, "property":property})
     d = d * (0.02/2.2)
     pt = {"days": t}
     mt = {"days": -t}

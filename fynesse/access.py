@@ -2,6 +2,7 @@ from .config import *
 import requests
 import pymysql
 import osmnx as ox
+from functools import cache
 
 # This file accesses the data
 
@@ -117,6 +118,7 @@ def count_local_features(latitude, longitude, width_km, height_km):
 
     return len(pois)
 
+@cache
 def get_rows_in_bounds(north, south, west, east, latest_date, earliest_date, conn = None):
     """
     Get rows from the database according to the specified bounds
