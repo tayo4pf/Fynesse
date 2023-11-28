@@ -7,11 +7,6 @@ import numpy as np
 
 """Place commands in this file to assess the data you have downloaded. How are missing values encoded, how are outliers encoded? What do columns represent, makes rure they are correctly labeled. How is the data indexed. Crete visualisation routines to assess the data (e.g. in bokeh). Ensure that date formats are correct and correctly timezoned."""
 
-def random_sample(table, condition, size):
-    query = f"SELECT * FROM {table} WHERE {condition}"
-    rows = access.get_rows_from_query(query)
-    return np.random.choice(rows, size)
-
 def query(query, columns):
     """Request user input for some aspect of the data."""
     data = access.get_rows_from_query(query)
@@ -38,3 +33,11 @@ def labelled(data, columns):
         col: data[:, i] for i, col in enumerate(columns)
     })
     return df
+
+def df_from_year(year):
+    cols = ("Postcode", "Price", "Date", "Property Type", "New Build Flag", "Tenure Type", 
+        "Locality", "Town/City", "District", "County", "Positional Quality Indicator",
+        "Country", "Latitude", "Longitude")
+    pcdf1, pcdf2 = pd.read_csv(f"pcd/pc-{year}-part1.csv", names = cols), pd.read_csv(f"pcd/pc-{year}-part2.csv", names = cols)
+    pcdf = pd.concat((pcdf1, pcdf2))
+    return pcdf
