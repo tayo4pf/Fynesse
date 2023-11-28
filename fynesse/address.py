@@ -14,7 +14,7 @@ from itertools import product
 
 def optimize_model_args(arg_vals, input):
     return min(
-        product(**arg_vals), 
+        product(arg_vals), 
         key = lambda a: predict_price_parameterized(a,**input)[1].mse_model
                )
 
