@@ -133,7 +133,8 @@ def predict_price(latitude, longitude, date, property_type):
     earliest_date = date + datetime.timedelta(**mt)
 
     rows = access.get_rows_in_bounds(north, south, west, east, latest_date, earliest_date)
-
+    if len(rows) == 0:
+        return np.nan, f"Insufficient data to form model: {len(rows)} datapoints in bounding area"
     df = assess.labelled(rows, ("Postcode", "Price", "Date", "Property Type", "New Build Flag", "Tenure Type", 
         "Locality", "Town/City", "District", "County", "Positional Quality Indicator",
         "Country", "Latitude", "Longitude", "ID"))

@@ -71,7 +71,7 @@ def plot_price_predictions(df, x=None, args=None, prices=False):
     df = df.sort_values(by=col)
     price_preds = []
     for latitude, longitude, date, pt in zip(df["Latitude"], df["Longitude"], df["Date"], df["Property Type"]):
-        if args:
+        if args is not None:
             p, _ = address.predict_price_parameterized(args, latitude, longitude, date, pt)
         else:
             p, _ = address.predict_price(latitude, longitude, date, pt)
