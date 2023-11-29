@@ -53,13 +53,12 @@ def plot_gdf_col_heatmap(gdf, col):
     base = uk_gdf.plot(color='white', edgecolor='black', alpha=0, figsize=(11,11))
     gdf.plot(ax=base, column=col, legend=True)
     
-def plot_price_predictions(df, x=None, args=None, prices=False, confidence=None):
+def plot_price_predictions(df, x=None, args=None, prices=False):
     """
     Plots the price predictions for a dataframe of property sales
     :param df: The dataframe containing the property sale data ("Longitude", "Latitude", "Date", "Property Type")
     :param x: The column of the dataframe to be used as the x-axis for the plot
     :param prices: The true sale prices for the properties (optional)
-    :param confidence: The percentage confidence interval to be plotted (optional)
     """
     if not ("Latitude" in df and "Longitude" in df and "Date" in df and "Property Type" in df):
         raise ValueError(f"df must contain columns 'Latitude', 'Longitude', 'Date', and 'Property Type', {df.columns} is not sufficient")
@@ -71,29 +70,16 @@ def plot_price_predictions(df, x=None, args=None, prices=False, confidence=None)
         col = x
     df = df.sort_values(by=col)
     price_preds = []
-    upper = []
-    lower = []
     for latitude, longitude, date, pt in zip(df["Latitude"], df["Longitude"], df["Date"], df["Property Type"]):
         if args:
-            p, s, _ = address.predict_price_parameterized(args, latitude, longitude, date, pt)
+            p, _ = address.predict_price_parameterized(args, latitude, longitude, date, pt)
         else:
-            p, s, _ = address.predict_price(latitude, longitude, date, pt)
-        if confidence is not None:
-            if p == np.nan:
-                upper.append(np.nan)
-                lower.append(np.nan)
-            else:
-                upper.append(s.summary_frame(alpha=0.05)['obs_ci_upper'])
-                lower.append(s.summary_frame(alpha=0.05)['obs_ci_lower'])
+            p, _ = address.predict_price(latitude, longitude, date, pt)
         price_preds.append(p)
     fig = plt.figure()
     ax = fig.add_subplot(111)
     
     ax.plot(df[col], price_preds, color='red', linestyle='--', zorder=1)
-    if confidence is not None:
-        ax.plot(df[col], upper, color='red', line_style='-', zorder=1)
-        ax.plot(df[col], lower, color='red', linestyle='-', zorder=1)
-        ax.fill_between(df[col], lower, upper, color='red', alpha=0.3, zorder=1)
     if prices is not None:
         ax.scatter(df[col], df["Price"], zorder=2)
     ax.set_xlabel(col)

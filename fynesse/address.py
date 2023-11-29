@@ -98,7 +98,7 @@ def predict_price_parameterized(args, latitude, longitude, date, property_type):
         (np.array([date.toordinal()]).reshape(-1, 1), property_oh_pred, geohash_oh), axis=1
     )
     price_pred = m_results.predict(design_pred)
-    return price_pred[0],  m_results.get_prediction(design_pred), m_results
+    return price_pred[0], m_results
 
 def predict_price(latitude, longitude, date, property_type):
     """
@@ -169,4 +169,4 @@ def predict_price(latitude, longitude, date, property_type):
     design_pred = np.concatenate(
         (np.array([date.toordinal()]).reshape(-1, 1), property_oh_pred, geohash_oh), axis=1
     )
-    return m_results.predict(design_pred)[0], m_results.get_prediction(design_pred), m_results
+    return m_results.predict(design_pred)[0], m_results
