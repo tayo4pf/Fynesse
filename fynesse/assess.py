@@ -1,6 +1,6 @@
 from .config import *
 
-from . import access
+from . import access, address
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
@@ -9,7 +9,10 @@ import geopandas as gpd
 """Place commands in this file to assess the data you have downloaded. How are missing values encoded, how are outliers encoded? What do columns represent, makes rure they are correctly labeled. How is the data indexed. Crete visualisation routines to assess the data (e.g. in bokeh). Ensure that date formats are correct and correctly timezoned."""
 
 def query(query, columns):
-    """Request user input for some aspect of the data."""
+    """
+    Request user input for some aspect of the data.
+    
+    """
     data = access.get_rows_from_query(query)
     assert len(columns) == len(data[0])
 
@@ -46,7 +49,52 @@ def df_from_year(year):
 def plot_gdf_col_heatmap(gdf, col):
     world_gdf = gpd.read_file(gpd.datasets.get_path('naturalearth_lowres'))
     world_gdf.crs = "EPSG:4326"
-    uk_gdf = world_gdf[(world_gdf['name'] in ['England', 'Wales', 'Scotland', 'Northern Ireland', 'Channel Islands', 'Isle of Man'])]
+    uk_gdf = world_gdf[np.in1d(world_gdf['name'],['England', 'Wales', 'Scotland', 'Northern Ireland', 'Channel Islands', 'Isle of Man'])]
     base = uk_gdf.plot(color='white', edgecolor='black', alpha=0, figsize=(11,11))
     gdf.plot(ax=base, column=col, legend=True)
     
+def plot_price_predictions(df, x=None, args=None, prices=False, confidence=None):
+    """
+    Plots the price predictions for a dataframe of property sales
+    :param df: The dataframe containing the property sale data ("Longitude", "Latitude", "Date", "Property Type")
+    :param x: The column of the dataframe to be used as the x-axis for the plot
+    :param prices: The true sale prices for the properties (optional)
+    :param confidence: The percentage confidence interval to be plotted (optional)
+    """
+    if not ("Latitude" in df and "Longitude" in df and "Date" in df and "Property Type" in df):
+        raise ValueError(f"df must contain columns 'Latitude', 'Longitude', 'Date', and 'Property Type', {df.columns} is not sufficient")
+    if prices and "Price" not in df:
+        raise ValueError(f"df must contain column 'Price' if prices is True, {df.columns} is not sufficient")
+    if x is None:
+        col = "Date"
+    else:
+        col = x
+    df = df.sort_values(by=col)
+    price_preds = []
+    upper = []
+    lower = []
+    for latitude, longitude, date, pt in zip(df["Latitude"], df["Longitude"], df["Date"], df["Property Type"]):
+        if args:
+            p, s, _ = address.predict_price_parameterized(args, latitude, longitude, date, pt)
+        else:
+            p, s, _ = address.predict_price(latitude, longitude, date, pt)
+        if confidence is not None:
+            if p == np.nan:
+                upper.append(np.nan)
+                lower.append(np.nan)
+            else:
+                upper.append(s.summary_frame(alpha=0.05)['obs_ci_upper'])
+                lower.append(s.summary_frame(alpha=0.05)['obs_ci_lower'])
+        price_preds.append(p)
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    
+    ax.plot(df[col], price_preds, color='red', linestyle='--', zorder=1)
+    if confidence is not None:
+        ax.plot(df[col], upper, color='red', line_style='-', zorder=1)
+        ax.plot(df[col], lower, color='red', linestyle='-', zorder=1)
+        ax.fill_between(df[col], lower, upper, color='red', alpha=0.3, zorder=1)
+    if prices is not None:
+        ax.scatter(df[col], df["Price"], zorder=2)
+    ax.set_xlabel(col)
+    plt.tight_layout()

@@ -6,13 +6,16 @@ import pandas as pd
 import pygeohash as gh
 import numpy as np
 import datetime
-import pymysql
-import yaml
 import statsmodels.api as sm
 from fynesse import access, assess
 from itertools import product
 
-def optimize_model_args(arg_vals, input):
+def _optimize_model_args(arg_vals, input):
+    """
+    Deprecated
+    Attempts to find optimal parameters for price prediction using mse_model, doesn't work for a 
+    regularized regression
+    """
     def cost(x):
         r = predict_price_parameterized(x,**input)[1]
         if isinstance(r, str):
@@ -27,8 +30,15 @@ def optimize_model_args(arg_vals, input):
 def predict_price_parameterized(args, latitude, longitude, date, property_type):
     """
     Price prediction for UK housing with parameters
-    Returns performance of model with parameters
-    Access username, password, host, and database config must be specified
+    This may be used for the prediction of the sale price of an atypical sale, for example a sale far into the future
+    or the sale of a property that is far away from any other properties
+    :param args: tuple of the length in km of the bounding box square, the amount of days around the date to bound
+    the search by, and the precision of the geohash to be used
+    :param latitude: The latitude of the property
+    :param longitude: The longitude of the property
+    :param date: The date of the property sale (datetime object)
+    :param property_type: The property type enum of the property (F, S, D, T, O)
+    :return: tuple of predicted price, and model results
     """
 
     d, t, h = args
@@ -88,15 +98,23 @@ def predict_price_parameterized(args, latitude, longitude, date, property_type):
         (np.array([date.toordinal()]).reshape(-1, 1), property_oh_pred, geohash_oh), axis=1
     )
     price_pred = m_results.predict(design_pred)
-    return price_pred, m_results
+    return price_pred[0],  m_results.get_prediction(design_pred), m_results
 
 def predict_price(latitude, longitude, date, property_type):
     """
     Price prediction for UK housing.
+    :param latitude: Latitude of the property
+    :param longitude: Longitude of the property
+    :param date: The date of the property sale (datetime object)
+    :param property_type: The property type enum of the property (F, S, D, T, O)
+    :return: tuple of predicted price, and model results
     """
     
+    """
     d, t, h = optimize_model_args(((100, 50, 25),(730, 365, 180),(7, 5, 3)), 
                                   {"latitude":latitude, "longitude":longitude, "date":date, "property_type":property_type})
+    """
+    d, t, h = (50, 365, 5)
     d = d * (0.02/2.2)
     pt = {"days": t}
     mt = {"days": -t}
@@ -151,4 +169,4 @@ def predict_price(latitude, longitude, date, property_type):
     design_pred = np.concatenate(
         (np.array([date.toordinal()]).reshape(-1, 1), property_oh_pred, geohash_oh), axis=1
     )
-    return m_results.predict(design_pred)[0]
+    return m_results.predict(design_pred)[0], m_results.get_prediction(design_pred), m_results
