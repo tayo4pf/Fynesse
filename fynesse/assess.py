@@ -76,11 +76,11 @@ def plot_price_predictions(df, x=None, args=None, prices=False):
         else:
             p, _ = address.predict_price(latitude, longitude, date, pt)
         price_preds.append(p)
-    fig = plt.figure()
+    fig = plt.figure(figsize=(10,5))
     ax = fig.add_subplot(111)
     
     ax.plot(df[col], price_preds, color='red', linestyle='--', zorder=1)
     if prices is not None:
-        ax.scatter(df[col], df["Price"], zorder=2)
+        ax.plot(df[col], df["Price"], zorder=2)
     ax.set_xlabel(col)
     plt.tight_layout()
