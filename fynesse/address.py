@@ -10,7 +10,7 @@ import statsmodels.api as sm
 from fynesse import access, assess
 from itertools import product
 
-def _optimize_model_args(arg_vals, input):
+def optimize_model_args(arg_vals, input):
     """
     Deprecated
     Attempts to find optimal parameters for price prediction using mse_model, doesn't work for a 
@@ -20,9 +20,9 @@ def _optimize_model_args(arg_vals, input):
         r = predict_price_parameterized(x,**input)[1]
         if isinstance(r, str):
             return float('inf')
-        return r.mse_model
+        return r
 
-    return min(
+    return max(
         product(*arg_vals), 
         key = cost
                )
@@ -38,7 +38,7 @@ def predict_price_parameterized(args, latitude, longitude, date, property_type):
     :param longitude: The longitude of the property
     :param date: The date of the property sale (datetime object)
     :param property_type: The property type enum of the property (F, S, D, T, O)
-    :return: tuple of predicted price, and model results
+    :return: tuple of predicted price, r squared, and model results
     """
 
     d, t, h = args
@@ -97,24 +97,27 @@ def predict_price_parameterized(args, latitude, longitude, date, property_type):
     design_pred = np.concatenate(
         (np.array([date.toordinal()]).reshape(-1, 1), property_oh_pred, geohash_oh), axis=1
     )
-    price_pred = m_results.predict(design_pred)
-    return price_pred[0], m_results
+    p_array = np.array(df["Price"])
+    rss = np.sum(np.square(m_results.fittedvalues - p_array))
+    tss = np.sum(np.square(p_array - np.mean(p_array)))
+    return m_results.predict(design_pred)[0], (1-(rss/tss)), m_results
 
-def predict_price(latitude, longitude, date, property_type):
+def predict_price(latitude, longitude, date, property_type, optimize=False):
     """
     Price prediction for UK housing.
     :param latitude: Latitude of the property
     :param longitude: Longitude of the property
     :param date: The date of the property sale (datetime object)
     :param property_type: The property type enum of the property (F, S, D, T, O)
-    :return: tuple of predicted price, and model results
+    :param optimize: When true, find the combination of parameters that provide the model with the highest r squared (optional)
+    :return: tuple of predicted price, r squared, and model results
     """
     
-    """
-    d, t, h = optimize_model_args(((100, 50, 25),(730, 365, 180),(7, 5, 3)), 
+    if optimize:
+        d, t, h = optimize_model_args(((100, 50, 25),(730, 365, 180),(7, 5, 3)), 
                                   {"latitude":latitude, "longitude":longitude, "date":date, "property_type":property_type})
-    """
-    d, t, h = (50, 365, 5)
+    else:
+        d, t, h = (50, 365, 5)
     d = d * (0.02/2.2)
     pt = {"days": t}
     mt = {"days": -t}
@@ -170,11 +173,14 @@ def predict_price(latitude, longitude, date, property_type):
     design_pred = np.concatenate(
         (np.array([date.toordinal()]).reshape(-1, 1), property_oh_pred, geohash_oh), axis=1
     )
-    return m_results.predict(design_pred)[0], m_results
+    p_array = np.array(df["Price"])
+    rss = np.sum(np.square(m_results.fittedvalues - p_array))
+    tss = np.sum(np.square(p_array - np.mean(p_array)))
+    return m_results.predict(design_pred)[0], (1-(rss/tss)), m_results
 
 def price_predictions(df, args=None):
     """
-    Returns list of price predictions for a dataframe of property sales
+    Returns list of price predictions, and r squared values for a dataframe of property sales
     :param df: The dataframe containing the property sale data ("Longitude", "Latitude", "Date", "Property Type")
     :param args: The parameters to be used for price predictions (optional)
     :return: List of price predictions
@@ -182,10 +188,12 @@ def price_predictions(df, args=None):
     if not ("Latitude" in df and "Longitude" in df and "Date" in df and "Property Type" in df):
         raise ValueError(f"df must contain columns 'Latitude', 'Longitude', 'Date', and 'Property Type', {df.columns} is not sufficient")
     price_preds = []
+    rs = []
     for latitude, longitude, date, pt in zip(df["Latitude"], df["Longitude"], df["Date"], df["Property Type"]):
         if args is not None:
-            p, _ = predict_price_parameterized(args, latitude, longitude, date, pt)
+            p, r, _ = predict_price_parameterized(args, latitude, longitude, date, pt)
         else:
-            p, _ = predict_price(latitude, longitude, date, pt)
+            p, r, _ = predict_price(latitude, longitude, date, pt)
         price_preds.append(p)
-    return price_preds
+        rs.append(r)
+    return price_preds, rs
