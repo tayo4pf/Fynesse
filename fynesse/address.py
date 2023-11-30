@@ -171,3 +171,21 @@ def predict_price(latitude, longitude, date, property_type):
         (np.array([date.toordinal()]).reshape(-1, 1), property_oh_pred, geohash_oh), axis=1
     )
     return m_results.predict(design_pred)[0], m_results
+
+def price_predictions(df, args=None):
+    """
+    Returns list of price predictions for a dataframe of property sales
+    :param df: The dataframe containing the property sale data ("Longitude", "Latitude", "Date", "Property Type")
+    :param args: The parameters to be used for price predictions (optional)
+    :return: List of price predictions
+    """
+    if not ("Latitude" in df and "Longitude" in df and "Date" in df and "Property Type" in df):
+        raise ValueError(f"df must contain columns 'Latitude', 'Longitude', 'Date', and 'Property Type', {df.columns} is not sufficient")
+    price_preds = []
+    for latitude, longitude, date, pt in zip(df["Latitude"], df["Longitude"], df["Date"], df["Property Type"]):
+        if args is not None:
+            p, _ = address.predict_price_parameterized(args, latitude, longitude, date, pt)
+        else:
+            p, _ = address.predict_price(latitude, longitude, date, pt)
+        price_preds.append(p)
+    return price_preds
