@@ -80,11 +80,12 @@ def df_from_year(year):
     pcdf = pd.concat((pcdf1, pcdf2))
     return pcdf
 
-def plot_gdf_col_heatmap(df, col):
+def plot_gdf_col_heatmap(df, col, alpha=0.05):
     """
     Plot a heatmap of specified column value across the uk using latitude and longitude data in dataframe
     :param df: DataFrame object, must have columns latitude and longitude
     :param col: Name of the column value to be used to plot the heatmap
+    :param alpha: Transparency of points on the plot
     """
     if not ("Latitude" in df and "Longitude" in df and col in df):
         raise ValueError(f"Dataframe must have columns 'Latitude', 'Longitude' and '{col}'")
@@ -94,7 +95,7 @@ def plot_gdf_col_heatmap(df, col):
     world_gdf.crs = "EPSG:4326"
     uk_gdf = world_gdf[(world_gdf["name"] == "United Kingdom")]
     base = uk_gdf.plot(color='white', edgecolor='black', alpha=1, figsize=(11,11), label=col)
-    gdf.plot(ax=base, column=col, alpha=0.05, legend=True)
+    gdf.plot(ax=base, column=col, alpha=alpha, legend=True)
 
 def plot_barchart(df, group_col, measured_col):
     """
