@@ -95,3 +95,22 @@ def plot_gdf_col_heatmap(df, col):
     uk_gdf = world_gdf[(world_gdf["name"] == "United Kingdom")]
     base = uk_gdf.plot(color='white', edgecolor='black', alpha=1, figsize=(11,11), label=col)
     gdf.plot(ax=base, column=col, alpha=0.05, legend=True)
+
+def plot_barchart(df, group_col, measured_col):
+    """
+    Plot a barchart of specified columns from a dataframe
+    :param df: The Dataframe to be used to plot the barchart
+    :param group_col: The column to be used to group the bars
+    :param measured_col: The y-axis column
+    """
+    if group_col not in df:
+        raise ValueError(f"{group_col} must be in the dataframe passed")
+    if measured_col not in df:
+        raise ValueError(f"{measured_col} must be in the dataframe passed")
+    
+    bars = df[group_col].unique()
+    means = [np.mean(df[df[group_col] == col][measured_col]) for col in bars]
+    plt.bar(bars, means)
+
+    plt.set_ylabel(f"Mean value of {measured_col}")
+    plt.show()
