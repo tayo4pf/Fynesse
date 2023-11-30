@@ -26,12 +26,13 @@ def query(query, columns):
         })
     return df
 
-def view(df, x_col, y_cols):
+def view(df, x_col, y_cols, scatter=False):
     """
     Provide a view of the data that allows the user to verify some aspect of its quality.
     :param df: The dataframe containing the columns to be visualized
     :param x_col: The name of the column to be visualized as the x-axis
     :param y_col: List of column names to be visualized as the y_axis
+    :param scatter: Bool, set to true to plot a scatter graph (optional)
     """
     if x_col not in df:
         raise ValueError(f"Column {x_col} is not in the dataframe provided")
@@ -40,7 +41,10 @@ def view(df, x_col, y_cols):
             raise ValueError(f"Column {y_col} is not in the dataframe provided")
     df = df.sort_values(by=x_col)
     for y_col in y_cols:
-        plt.plot(df[x_col], df[y_col], label=y_col)
+        if scatter:
+            plt.scatter(df[x_col], df[y_col], label=y_col)
+        else:
+            plt.plot(df[x_col], df[y_col], label=y_col)
     plt.xlabel(x_col)
     plt.legend()
     plt.show()
@@ -76,9 +80,18 @@ def df_from_year(year):
     pcdf = pd.concat((pcdf1, pcdf2))
     return pcdf
 
-def plot_gdf_col_heatmap(gdf, col):
+def plot_gdf_col_heatmap(df, col):
+    """
+    Plot a heatmap of specified column value across the uk using latitude and longitude data in dataframe
+    :param df: DataFrame object, must have columns latitude and longitude
+    :param col: Name of the column value to be used to plot the heatmap
+    """
+    if not ("Latidude" in df and "Longitude" in df and col in df):
+        raise ValueError(f"Dataframe must have columns 'Latitude', 'Longitude' and '{col}'")
+    geometry = gpd.points_from_xy(df["Longitude"], df["Latitude"])
+    gdf = gpd.GeoDataFrame(df, geometry=geometry)
     world_gdf = gpd.read_file(gpd.datasets.get_path('naturalearth_lowres'))
     world_gdf.crs = "EPSG:4326"
-    uk_gdf = world_gdf[world_gdf['name'] == 'England']
-    base = uk_gdf.plot(color='white', edgecolor='black', alpha=0, figsize=(11,11))
-    gdf.plot(ax=base, column=col, legend=True)
+    uk_gdf = world_gdf[(world_gdf["name"] == "United Kingdom")]
+    base = uk_gdf.plot(color='white', edgecolor='black', alpha=1, figsize=(11,11), label=col)
+    gdf.plot(ax=base, column=col, alpha=0.05, legend=True)
