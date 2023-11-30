@@ -102,7 +102,7 @@ def predict_price(latitude, longitude, date, property_type, optimize=False):
     if optimize:
         return max(
         (predict_price_parameterized(a, latitude, longitude, date, property_type) for a in product((10, 25, 50), (730, 365, 180), (3, 5, 7))), 
-        key = lambda p, r, m: -float('inf') if isinstance(m, str) else r
+        key = lambda x: -float('inf') if isinstance(x[2], str) else x[1]
                )
     else:
         d, t, h = (50, 365, 5)
