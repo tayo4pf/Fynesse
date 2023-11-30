@@ -79,6 +79,6 @@ def df_from_year(year):
 def plot_gdf_col_heatmap(gdf, col):
     world_gdf = gpd.read_file(gpd.datasets.get_path('naturalearth_lowres'))
     world_gdf.crs = "EPSG:4326"
-    uk_gdf = world_gdf[np.in1d(world_gdf['name'],['England', 'Wales', 'Scotland', 'Northern Ireland', 'Channel Islands', 'Isle of Man'])]
+    uk_gdf = world_gdf[world_gdf['name'] == 'England']
     base = uk_gdf.plot(color='white', edgecolor='black', alpha=0, figsize=(11,11))
     gdf.plot(ax=base, column=col, legend=True)

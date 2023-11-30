@@ -184,8 +184,8 @@ def price_predictions(df, args=None):
     price_preds = []
     for latitude, longitude, date, pt in zip(df["Latitude"], df["Longitude"], df["Date"], df["Property Type"]):
         if args is not None:
-            p, _ = address.predict_price_parameterized(args, latitude, longitude, date, pt)
+            p, _ = predict_price_parameterized(args, latitude, longitude, date, pt)
         else:
-            p, _ = address.predict_price(latitude, longitude, date, pt)
+            p, _ = predict_price(latitude, longitude, date, pt)
         price_preds.append(p)
     return price_preds
