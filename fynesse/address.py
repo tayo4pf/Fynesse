@@ -10,22 +10,6 @@ import statsmodels.api as sm
 from fynesse import access, assess
 from itertools import product
 
-def optimize_model_args(arg_vals, input):
-    """
-    Attempts to find optimal parameters for price prediction using mse_model, doesn't work for a 
-    regularized regression
-    """
-    def cost(x):
-        r = predict_price_parameterized(x,**input)[1]
-        if isinstance(r, str):
-            return float('inf')
-        return r
-
-    return max(
-        product(*arg_vals), 
-        key = cost
-               )
-
 def predict_price_parameterized(args, latitude, longitude, date, property_type):
     """
     Price prediction for UK housing with parameters
@@ -60,7 +44,7 @@ def predict_price_parameterized(args, latitude, longitude, date, property_type):
     #Getting data according to bounds
     rows = access.get_rows_in_bounds(north, south, west, east, latest_date, earliest_date)
     if len(rows) == 0:
-        return np.nan, f"Insufficient data to form model: {len(rows)} datapoints in bounding area"
+        return np.nan, -float('inf'), f"Insufficient data to form model: {len(rows)} datapoints in bounding area"
     df = assess.labelled(rows, ("Postcode", "Price", "Date", "Property Type", "New Build Flag", "Tenure Type", 
         "Locality", "Town/City", "District", "County", "Positional Quality Indicator",
         "Country", "Latitude", "Longitude", "ID"))
@@ -81,7 +65,10 @@ def predict_price_parameterized(args, latitude, longitude, date, property_type):
     design = np.concatenate((np_ord(df["Date"]).reshape(-1, 1), property_type_oh, geohash_oh), axis=1)
 
     m = sm.OLS(np.array(df["Price"]).reshape(-1, 1), design)
-    m_results = m.fit_regularized(alpha=0.1, L1_wt=0)
+    try:
+        m_results = m.fit_regularized(alpha=0.1, L1_wt=0)
+    except:
+        return np.nan, np.nan, "SVD could not fit the model on given data" 
     property_oh_pred = np.array([np.array([
         1 if property_type == "F" else 0,
         1 if property_type == "S" else 0,
@@ -113,8 +100,10 @@ def predict_price(latitude, longitude, date, property_type, optimize=False):
     """
     
     if optimize:
-        d, t, h = optimize_model_args(((100, 50, 25),(730, 365, 180),(7, 5, 3)), 
-                                  {"latitude":latitude, "longitude":longitude, "date":date, "property_type":property_type})
+        return max(
+        (predict_price_parameterized(a, latitude, longitude, date, property_type) for a in product((10, 25, 50), (730, 365, 180), (3, 5, 7))), 
+        key = lambda p, r, m: -float('inf') if isinstance(m, str) else r
+               )
     else:
         d, t, h = (50, 365, 5)
     d = d * (0.02/2.2)
@@ -136,7 +125,7 @@ def predict_price(latitude, longitude, date, property_type, optimize=False):
 
     rows = access.get_rows_in_bounds(north, south, west, east, latest_date, earliest_date)
     if len(rows) == 0:
-        return np.nan, f"Insufficient data to form model: {len(rows)} datapoints in bounding area"
+        return np.nan, -float('inf'), f"Insufficient data to form model: {len(rows)} datapoints in bounding area"
     df = assess.labelled(rows, ("Postcode", "Price", "Date", "Property Type", "New Build Flag", "Tenure Type", 
         "Locality", "Town/City", "District", "County", "Positional Quality Indicator",
         "Country", "Latitude", "Longitude", "ID"))
