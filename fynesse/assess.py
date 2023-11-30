@@ -11,34 +11,64 @@ import geopandas as gpd
 def query(query, columns):
     """
     Request user input for some aspect of the data.
-    
+    :param query: The database query to be performed to select the data
+    :param columns: The columns to be selected in the query
+    :return: Dataframe containing the data selected from the database
     """
     data = access.get_rows_from_query(query)
-    assert len(columns) == len(data[0])
+    data = np.vstack(data)
+    if len(data) == 0:
+        raise ValueError("No data matches the query")
+    if len(columns) != len(data[0]):
+        raise ValueError(f"Number of columns in the dataframe({len(columns)}) must match number of columns selected in the query({len(data[0])})")
+    df = pd.DataFrame({
+        column: data[:,i] for i, column in enumerate(columns)
+        })
+    return df
 
-def view(data):
+def view(df, x_col, y_cols):
     """
     Provide a view of the data that allows the user to verify some aspect of its quality.
-    Provide a datafram with two columns, first column will be the x-axis, and the second column will be the y-axis
+    :param df: The dataframe containing the columns to be visualized
+    :param x_col: The name of the column to be visualized as the x-axis
+    :param y_col: List of column names to be visualized as the y_axis
     """
-    assert len(data.columns) == 2
-    x_ax = data.columns[0]
-    y_ax = data.columns[1]
-    plt.plot(data[x_ax], data[y_ax])
-    plt.xlabel(x_ax)
-    plt.ylabel(y_ax)
+    if x_col not in df:
+        raise ValueError(f"Column {x_col} is not in the dataframe provided")
+    for y_col in y_cols:
+        if y_col not in df:
+            raise ValueError(f"Column {y_col} is not in the dataframe provided")
+    df = df.sort_values(by=x_col)
+    for y_col in y_cols:
+        plt.plot(df[x_col], df[y_col], label=y_col)
+    plt.xlabel(x_col)
+    plt.legend()
     plt.show()
 
 def labelled(data, columns):
-    """Provide a labelled set of data ready for supervised learning."""
-    assert len(columns) == len(data[0])
+    """
+    Provide a labelled set of data ready for supervised learning.
+    Provide a dataframe from a set of rows of data
+    :param data: tuple tuple of datapoints
+    :param columns: list of column names for the dataframe
+    :return: Dataframe containining the labelled data
+    """
+    if len(data) == 0:
+        raise ValueError("No data matches the query")
+    if len(columns) != len(data[0]):
+        raise ValueError(f"Number of columns in the dataframe({len(columns)}) must match number of columns selected in the query({len(data[0])})")
     data = np.vstack(data)
     df = pd.DataFrame({
-        col: data[:, i] for i, col in enumerate(columns)
+        column: data[:, i] for i, column in enumerate(columns)
     })
     return df
 
 def df_from_year(year):
+    """
+    Provide a dataframe of price-coordinates data from a specified year
+    :param year: The year of data to be selected
+    :return: Dataframe containing the labelled data
+    """
     cols = ("Postcode", "Price", "Date", "Property Type", "New Build Flag", "Tenure Type", 
         "Locality", "Town/City", "District", "County", "Positional Quality Indicator",
         "Country", "Latitude", "Longitude")
@@ -58,6 +88,7 @@ def plot_price_predictions(df, x=None, args=None, prices=False):
     Plots the price predictions for a dataframe of property sales
     :param df: The dataframe containing the property sale data ("Longitude", "Latitude", "Date", "Property Type")
     :param x: The column of the dataframe to be used as the x-axis for the plot
+    :param args: The parameters to be used for price predictions (optional)
     :param prices: The true sale prices for the properties (optional)
     """
     if not ("Latitude" in df and "Longitude" in df and "Date" in df and "Property Type" in df):
@@ -84,3 +115,21 @@ def plot_price_predictions(df, x=None, args=None, prices=False):
         ax.plot(df[col], df["Price"], zorder=2)
     ax.set_xlabel(col)
     plt.tight_layout()
+
+def price_predictions(df, args=None):
+    """
+    Returns list of price predictions for a dataframe of property sales
+    :param df: The dataframe containing the property sale data ("Longitude", "Latitude", "Date", "Property Type")
+    :param args: The parameters to be used for price predictions (optional)
+    :return: List of price predictions
+    """
+    if not ("Latitude" in df and "Longitude" in df and "Date" in df and "Property Type" in df):
+        raise ValueError(f"df must contain columns 'Latitude', 'Longitude', 'Date', and 'Property Type', {df.columns} is not sufficient")
+    price_preds = []
+    for latitude, longitude, date, pt in zip(df["Latitude"], df["Longitude"], df["Date"], df["Property Type"]):
+        if args is not None:
+            p, _ = address.predict_price_parameterized(args, latitude, longitude, date, pt)
+        else:
+            p, _ = address.predict_price(latitude, longitude, date, pt)
+        price_preds.append(p)
+    return price_preds
