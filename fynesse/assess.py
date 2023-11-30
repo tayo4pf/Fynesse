@@ -86,7 +86,7 @@ def plot_gdf_col_heatmap(df, col):
     :param df: DataFrame object, must have columns latitude and longitude
     :param col: Name of the column value to be used to plot the heatmap
     """
-    if not ("Latidude" in df and "Longitude" in df and col in df):
+    if not ("Latitude" in df and "Longitude" in df and col in df):
         raise ValueError(f"Dataframe must have columns 'Latitude', 'Longitude' and '{col}'")
     geometry = gpd.points_from_xy(df["Longitude"], df["Latitude"])
     gdf = gpd.GeoDataFrame(df, geometry=geometry)
