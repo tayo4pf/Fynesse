@@ -112,5 +112,5 @@ def plot_barchart(df, group_col, measured_col):
     means = [np.mean(df[df[group_col] == col][measured_col]) for col in bars]
     plt.bar(bars, means)
 
-    plt.set_ylabel(f"Mean value of {measured_col}")
+    plt.ylabel(f"Mean value of {measured_col}")
     plt.show()
