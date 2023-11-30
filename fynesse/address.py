@@ -12,7 +12,6 @@ from itertools import product
 
 def optimize_model_args(arg_vals, input):
     """
-    Deprecated
     Attempts to find optimal parameters for price prediction using mse_model, doesn't work for a 
     regularized regression
     """
@@ -178,11 +177,12 @@ def predict_price(latitude, longitude, date, property_type, optimize=False):
     tss = np.sum(np.square(p_array - np.mean(p_array)))
     return m_results.predict(design_pred)[0], (1-(rss/tss)), m_results
 
-def price_predictions(df, args=None):
+def price_predictions(df, args=None, optimize=False):
     """
     Returns list of price predictions, and r squared values for a dataframe of property sales
     :param df: The dataframe containing the property sale data ("Longitude", "Latitude", "Date", "Property Type")
     :param args: The parameters to be used for price predictions (optional)
+    :param optimize: When True, find the combination of parameters that provide the model with the highest r squared (optional)
     :return: List of price predictions
     """
     if not ("Latitude" in df and "Longitude" in df and "Date" in df and "Property Type" in df):
@@ -193,7 +193,7 @@ def price_predictions(df, args=None):
         if args is not None:
             p, r, _ = predict_price_parameterized(args, latitude, longitude, date, pt)
         else:
-            p, r, _ = predict_price(latitude, longitude, date, pt)
+            p, r, _ = predict_price(latitude, longitude, date, pt, optimize=optimize)
         price_preds.append(p)
         rs.append(r)
     return price_preds, rs
